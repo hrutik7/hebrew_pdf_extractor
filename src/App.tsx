@@ -1,22 +1,24 @@
 import React, { useState } from 'react';
 import { FileUpload } from './components/FileUpload';
-import { TableView } from './components/TableView';
-import { AdditionalText } from './components/AdditionalText';
-import { ExtractedContent } from './types/Table';
-import { extractTablesFromPDF } from './services/api';
 import { Loader2 } from 'lucide-react';
+import { extractTablesFromPDF } from './services/api';
 
 function App() {
   const [loading, setLoading] = useState(false);
-  const [extractedContent, setExtractedContent] = useState<ExtractedContent | null>(null);
+  const [extractedContent, setExtractedContent] = useState(null);
   const [error, setError] = useState<string | null>(null);
+  const [productsData, setProductsData] = useState<any[]>([]);
 
   const handleFileSelect = async (file: File) => {
     setLoading(true);
     setError(null);
-    
     try {
-      const result = await extractTablesFromPDF(file);
+      const result:any = await extractTablesFromPDF(file); // Assuming this returns the extracted tables
+      console.log(result, 'Extracted Content');
+      
+      // Assuming the result contains an array of products
+      setProductsData(result?.data || []);
+      console.log(result?.data,"asdasd")
       setExtractedContent(result);
     } catch (err) {
       setError('Failed to process PDF. Please try again.');
@@ -24,6 +26,48 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const ProductTable = () => {
+    return (
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">Product Table</h1>
+        {productsData.length === 0 ? (
+          <p className="text-gray-600">No products to display. Please upload a valid PDF.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 px-4 py-2">לא.</th>
+                  <th className="border border-gray-300 px-4 py-2">קוד מוצר
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2">תיאור פריט
+                  </th>
+                  <th className="border border-gray-300 px-4 py-2">מיקום</th>
+                  <th className="border border-gray-300 px-4 py-2">ברקוד</th>
+                  <th className="border border-gray-300 px-4 py-2">כמות</th>
+                  <th className="border border-gray-300 px-4 py-2">מחיר</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productsData.map((product, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="border border-gray-300 px-4 py-2 text-center">{index + 1}</td>
+                    <td className="border border-gray-300 px-4 py-2">{product.Product_Code}</td>
+                    <td className="border border-gray-300 px-4 py-2">{product.Item_Description}</td>
+                    <td className="border border-gray-300 px-4 py-2">{product.Location}</td>
+                    <td className="border border-gray-300 px-4 py-2">{product.Barcode}</td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">{product.Quantity}</td>
+                    <td className="border border-gray-300 px-4 py-2 text-right">{product.Price}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -55,16 +99,7 @@ function App() {
           </div>
         )}
 
-        {extractedContent && (
-          <div className="space-y-8">
-            {extractedContent.tables.map((table, index) => (
-              <div key={index} className="bg-white shadow rounded-lg p-6">
-                <TableView table={table} />
-              </div>
-            ))}
-            <AdditionalText texts={extractedContent.additionalText} />
-          </div>
-        )}
+        {productsData.length > 0 && <ProductTable />}
       </div>
     </div>
   );
